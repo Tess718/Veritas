@@ -1,0 +1,13 @@
+{
+  "network": "testnet",
+  "chainId": 968,
+  "timestamp": "2026-08-17T10:49:12.565Z",
+  "vault": "0xE54c9Bd3D1C97518F2554be85a099EFE23556506",
+  "aiAgentManager": "0xeD732ea8E05033ebe4b357E69019f5ba7b9cD6f0",
+  "tokens": {
+    "asset-gpu-1": "0xB19fE5557b00bB4BdE5b7F0d8e3d3599fa3A5CDB",
+    "asset-solar-1": "0xd049Ea61FBD1edCa2f344fd4F784087A0EA1Ce34",
+    "asset-re-1": "0x8e1F48A09cDEF90C36713672A875bAb4B821f12c",
+    "asset-tbill-1": "0x221F49f107901bd572DD62cBe6186d1BF56d9cA0"
+  }
+}
