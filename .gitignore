@@ -13,7 +13,8 @@ contracts.md
 .env.production
 .env.local
 .env.example
-
+frontendenv.txt
+backendenv.txt
 # Hardhat & Foundry artifacts
 artifacts/
 cache/
