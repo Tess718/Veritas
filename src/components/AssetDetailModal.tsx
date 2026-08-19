@@ -63,8 +63,8 @@ export const AssetDetailModal: React.FC<AssetDetailModalProps> = ({
         const vaultContract = new ethers.Contract(activeParams.vaultContract, vaultAbi, signer);
 
         // Convert USDT float amounts to 18 decimal places (standard for BOT USDT)
-        const totalCostUSDTWei = ethers.parseUnits(totalCostUSDT.toFixed(18), 18);
         const pricePerFractionUSDTWei = ethers.parseUnits(asset.fractionPriceUSDT.toFixed(18), 18);
+        const totalCostUSDTWei = pricePerFractionUSDTWei * BigInt(purchaseFractions);
 
         // 1. Check existing allowance
         const currentAllowance = await usdtContract.allowance(wallet.address, activeParams.vaultContract);
@@ -98,8 +98,8 @@ export const AssetDetailModal: React.FC<AssetDetailModalProps> = ({
         const vaultContract = new ethers.Contract(activeParams.vaultContract, vaultAbi, signer);
 
         // Convert BOT float amounts to wei safely
-        const totalCostWei = ethers.parseEther(totalCostBOT.toFixed(18));
         const pricePerFractionWei = ethers.parseEther(asset.fractionPriceBOT.toFixed(18));
+        const totalCostWei = pricePerFractionWei * BigInt(purchaseFractions);
 
         // Send transaction
         const tx = await vaultContract.purchaseFractionsWithBOT(

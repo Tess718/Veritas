@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Asset from '../models/Asset.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -132,18 +133,32 @@ const DEFAULT_SEEDS = [
   }
 ];
 
+// Initialize in-memory fallback list
+let inMemoryAssets = DEFAULT_SEEDS.map((asset, index) => ({
+  ...asset,
+  _id: asset.contractAddress || `mock-id-${index}`,
+  createdAt: new Date()
+}));
+
+const isDbConnected = () => mongoose.connection.readyState === 1;
+
 // GET /api/assets — Fetch approved live assets (automatically seed if database is empty)
 router.get('/', async (req, res) => {
   try {
-    let assets = await Asset.find({ status: 'live' });
-    
-    if (assets.length === 0) {
-      console.log('Database empty! Auto-seeding default live assets...');
-      await Asset.insertMany(DEFAULT_SEEDS);
-      assets = await Asset.find({ status: 'live' });
+    if (isDbConnected()) {
+      let assets = await Asset.find({ status: 'live' });
+      
+      if (assets.length === 0) {
+        console.log('Database empty! Auto-seeding default live assets...');
+        await Asset.insertMany(DEFAULT_SEEDS);
+        assets = await Asset.find({ status: 'live' });
+      }
+      return res.json(assets);
+    } else {
+      console.log('Database disconnected! Using in-memory live assets...');
+      const assets = inMemoryAssets.filter(a => a.status === 'live');
+      return res.json(assets);
     }
-    
-    res.json(assets);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -152,8 +167,14 @@ router.get('/', async (req, res) => {
 // GET /api/assets/pending — Fetch pending submissions
 router.get('/pending', async (req, res) => {
   try {
-    const assets = await Asset.find({ status: 'pending' });
-    res.json(assets);
+    if (isDbConnected()) {
+      const assets = await Asset.find({ status: 'pending' });
+      return res.json(assets);
+    } else {
+      console.log('Database disconnected! Using in-memory pending assets...');
+      const assets = inMemoryAssets.filter(a => a.status === 'pending');
+      return res.json(assets);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -162,9 +183,21 @@ router.get('/pending', async (req, res) => {
 // POST /api/assets/submit — Submit pending listing
 router.post('/submit', async (req, res) => {
   try {
-    const newAsset = new Asset(req.body);
-    const saved = await newAsset.save();
-    res.status(201).json(saved);
+    if (isDbConnected()) {
+      const newAsset = new Asset(req.body);
+      const saved = await newAsset.save();
+      return res.status(201).json(saved);
+    } else {
+      console.log('Database disconnected! Submitting to in-memory store...');
+      const newAsset = {
+        ...req.body,
+        _id: req.body.contractAddress || `mock-id-${Date.now()}`,
+        status: 'pending',
+        createdAt: new Date()
+      };
+      inMemoryAssets.push(newAsset);
+      return res.status(201).json(newAsset);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -173,12 +206,23 @@ router.post('/submit', async (req, res) => {
 // PUT /api/assets/approve/:id — Admin approval
 router.put('/approve/:id', async (req, res) => {
   try {
-    const updated = await Asset.findByIdAndUpdate(
-      req.params.id,
-      { status: 'live', approvedAt: new Date() },
-      { new: true }
-    );
-    res.json(updated);
+    if (isDbConnected()) {
+      const updated = await Asset.findByIdAndUpdate(
+        req.params.id,
+        { status: 'live', approvedAt: new Date() },
+        { new: true }
+      );
+      return res.json(updated);
+    } else {
+      console.log('Database disconnected! Approving in-memory asset...');
+      const asset = inMemoryAssets.find(a => a._id === req.params.id || a.contractAddress === req.params.id);
+      if (!asset) {
+        return res.status(404).json({ error: 'Asset not found' });
+      }
+      asset.status = 'live';
+      asset.approvedAt = new Date();
+      return res.json(asset);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -187,12 +231,22 @@ router.put('/approve/:id', async (req, res) => {
 // PUT /api/assets/reject/:id — Admin rejection
 router.put('/reject/:id', async (req, res) => {
   try {
-    const updated = await Asset.findByIdAndUpdate(
-      req.params.id,
-      { status: 'rejected' },
-      { new: true }
-    );
-    res.json(updated);
+    if (isDbConnected()) {
+      const updated = await Asset.findByIdAndUpdate(
+        req.params.id,
+        { status: 'rejected' },
+        { new: true }
+      );
+      return res.json(updated);
+    } else {
+      console.log('Database disconnected! Rejecting in-memory asset...');
+      const asset = inMemoryAssets.find(a => a._id === req.params.id || a.contractAddress === req.params.id);
+      if (!asset) {
+        return res.status(404).json({ error: 'Asset not found' });
+      }
+      asset.status = 'rejected';
+      return res.json(asset);
+    }
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
