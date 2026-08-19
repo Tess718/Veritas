@@ -199,7 +199,7 @@ function AppContent() {
       />
 
       {/* Main View Router */}
-      <main className="flex-1">
+      <main className="flex-1 pt-16 sm:pt-18">
         {activeTab === 'home' && (
           <LandingPage
             assets={SAMPLE_RWA_ASSETS}
