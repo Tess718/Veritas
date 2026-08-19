@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { RWAAsset, AssetCategory, WalletState } from '../types';
 import { AssetCard } from './AssetCard';
 import { AssetSubmissionModal } from './AssetSubmissionModal';
-import { Search, Filter, Cpu, Zap, Building2, Landmark, Layers, ChevronRight, Home, PlusCircle } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { Search, Filter, Cpu, Zap, Building2, Landmark, Layers, ChevronRight, Home, PlusCircle, ArrowUpRight } from 'lucide-react';
 
 interface AssetMarketplaceProps {
   assets: RWAAsset[]; // Hardcoded fallback assets
@@ -18,6 +19,7 @@ export const AssetMarketplace: React.FC<AssetMarketplaceProps> = ({ assets, onSe
   const [liveAssets, setLiveAssets] = useState<RWAAsset[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState<boolean>(false);
+  const toast = useToast();
 
   // Fetch live approved assets from Backend API on mount
   const fetchLiveAssets = async () => {
@@ -77,11 +79,11 @@ export const AssetMarketplace: React.FC<AssetMarketplaceProps> = ({ assets, onSe
   const allAssets = liveAssets.length > 0 ? liveAssets : assets;
 
   const categories: { id: AssetCategory | 'all'; label: string; icon: React.ReactNode }[] = [
-    { id: 'all', label: 'All RWA Assets', icon: <Layers className="w-4 h-4" /> },
-    { id: 'depin_gpu', label: 'DePIN AI Compute', icon: <Cpu className="w-4 h-4 text-cyan-400" /> },
-    { id: 'solar_farm', label: 'Green Energy Grid', icon: <Zap className="w-4 h-4 text-emerald-400" /> },
-    { id: 'real_estate', label: 'Prime Real Estate', icon: <Building2 className="w-4 h-4 text-purple-400" /> },
-    { id: 'treasury', label: 'U.S. T-Bills', icon: <Landmark className="w-4 h-4 text-amber-400" /> },
+    { id: 'all', label: 'All RWA Assets', icon: <Layers className="w-3.5 h-3.5" /> },
+    { id: 'depin_gpu', label: 'DePIN AI Compute', icon: <Cpu className="w-3.5 h-3.5 text-[#00E575]" /> },
+    { id: 'solar_farm', label: 'Green Energy Grid', icon: <Zap className="w-3.5 h-3.5 text-[#FFE600]" /> },
+    { id: 'real_estate', label: 'Prime Real Estate', icon: <Building2 className="w-3.5 h-3.5 text-purple-400" /> },
+    { id: 'treasury', label: 'U.S. T-Bills', icon: <Landmark className="w-3.5 h-3.5 text-cyan-400" /> },
   ];
 
   const filteredAssets = allAssets
@@ -99,113 +101,131 @@ export const AssetMarketplace: React.FC<AssetMarketplaceProps> = ({ assets, onSe
       return a.riskScore.localeCompare(b.riskScore);
     });
 
+  const totalMarketValuation = allAssets.reduce((acc, curr) => acc + curr.totalValueUSD, 0);
+
   return (
-    <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
       
-      {/* Page Header & Breadcrumb */}
-      <div className="space-y-3">
-        <div className="flex items-center space-x-2 text-xs font-mono text-gray-400">
-          <span className="flex items-center space-x-1 hover:text-white transition-colors">
-            <Home className="w-3.5 h-3.5" />
-            <span>Home</span>
-          </span>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-          <span className="text-cyan-400 font-bold">RWA Fractional Marketplace</span>
+      {/* Streamlined Clean Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center space-x-2 text-xs font-mono text-[#00E575] uppercase tracking-widest">
+            <span className="w-2 h-2 rounded-full bg-[#00E575] animate-pulse"></span>
+            <span>BOT Chain Vaults</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            RWA Fractional Marketplace
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-400 font-sans max-w-xl">
+            Inspect and trade verified physical asset shares backed by live IoT telemetry and legal SPV documentation.
+          </p>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
-          <div>
-            <div className="flex items-center space-x-2 text-xs font-mono text-cyan-400 uppercase tracking-widest mb-1">
-              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-              <span>On-Chain Real World Asset Vaults</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white">RWA Fractional Marketplace</h1>
-            <p className="text-xs text-gray-400 font-sans mt-1">
-              Browse, filter, and inspect verified physical asset shares backed by IoT telemetry and legal SPV audits on BOT Chain.
-            </p>
-          </div>
+        {/* List Your Asset CTA */}
+        <button
+          onClick={() => {
+            if (!wallet.isConnected) {
+              toast.warning('Please connect your EVM wallet to submit an asset.');
+            } else {
+              setIsSubmitModalOpen(true);
+            }
+          }}
+          className="px-5 py-2.5 rounded-full bg-white hover:bg-gray-100 text-black font-bold text-xs flex items-center space-x-1.5 transition-all shadow-md shadow-white/5 active:scale-95 self-start md:self-auto group shrink-0"
+        >
+          <PlusCircle className="w-4 h-4 text-black" />
+          <span>List Your Asset</span>
+          <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform text-black" />
+        </button>
+      </div>
 
-          {/* Search, Sort & Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            
-            {/* List Your Asset Button */}
-            <button
-              onClick={() => {
-                if (!wallet.isConnected) {
-                  alert('Please connect your EVM wallet to submit an asset.');
-                } else {
-                  setIsSubmitModalOpen(true);
-                }
-              }}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-400 text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center space-x-1.5 transition-all shadow-lg shadow-purple-500/20 whitespace-nowrap"
-            >
-              <PlusCircle className="w-4 h-4 text-black" />
-              <span>List Your Asset</span>
-            </button>
-
-            <div className="relative w-full sm:w-48">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="glass-input w-full pl-10 pr-4 py-2 rounded-xl text-xs font-mono placeholder:text-gray-500"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2 w-full sm:w-auto">
-              <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="glass-input px-3 py-2 rounded-xl text-xs font-mono text-gray-300 w-full sm:w-auto bg-[#090B10]"
+      {/* Minimalist Controls Bar: Category Pills + Search + Sort */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        
+        {/* Compact Category Switcher (Matching Hero Filter Pill Style) */}
+        <div className="flex items-center p-1 rounded-full bg-[#12141c] border border-white/10 overflow-x-auto scrollbar-none self-start lg:self-auto max-w-full">
+          {categories.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 select-none flex items-center space-x-1.5 ${
+                  isActive
+                    ? 'bg-white text-black font-bold shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
               >
-                <option value="apy">Highest APY</option>
-                <option value="valuation">Highest Valuation</option>
-                <option value="risk">Lowest Risk Rating</option>
-              </select>
-            </div>
-          </div>
+                {cat.icon}
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
+
+        {/* Right Search & Sort Controls */}
+        <div className="flex items-center gap-2.5 self-end lg:self-auto w-full sm:w-auto">
+          
+          {/* Search Pill */}
+          <div className="relative flex-1 sm:w-56">
+            <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search assets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3.5 py-1.5 rounded-full bg-[#12141c] border border-white/10 hover:border-white/20 focus:border-white/40 text-xs text-white placeholder:text-gray-500 focus:outline-none transition-colors"
+            />
+          </div>
+
+          {/* Sort Pill */}
+          <div className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-[#12141c] border border-white/10 hover:border-white/20 text-xs font-mono text-gray-300 shrink-0">
+            <Filter className="w-3 h-3 text-gray-400" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-transparent text-xs text-gray-200 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="apy" className="bg-[#12141c] text-white">Highest APY</option>
+              <option value="valuation" className="bg-[#12141c] text-white">Highest Valuation</option>
+              <option value="risk" className="bg-[#12141c] text-white">Lowest Risk Rating</option>
+            </select>
+          </div>
+
+        </div>
+
       </div>
 
-      {/* Category Filter Tabs */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-4 py-2.5 rounded-xl text-xs font-mono flex items-center space-x-2 whitespace-nowrap transition-all ${
-              selectedCategory === cat.id
-                ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/50 shadow-md shadow-cyan-500/10 font-bold'
-                : 'glass-card text-gray-400 hover:text-white'
-            }`}
-          >
-            {cat.icon}
-            <span>{cat.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Assets Grid */}
+      {/* Assets Grid (Spacious 3-Column Layout) */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="glass-card h-80 rounded-2xl animate-pulse bg-white/5 border border-white/10" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="h-[480px] rounded-[2rem] animate-pulse bg-white/[0.03] border border-white/[0.06]" />
           ))}
         </div>
       ) : filteredAssets.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
           {filteredAssets.map((asset) => (
             <AssetCard key={asset.id} asset={asset} onSelect={onSelectAsset} />
           ))}
         </div>
       ) : (
-        <div className="glass-card p-12 rounded-2xl text-center max-w-md mx-auto space-y-3">
-          <Layers className="w-10 h-10 text-gray-500 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No Assets Found</h3>
-          <p className="text-xs text-gray-400">Try clearing your search query or selecting a different category filter.</p>
+        <div className="p-14 rounded-[2.5rem] bg-[#0C0E17]/80 border border-white/[0.08] text-center max-w-md mx-auto space-y-4 shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-black flex items-center justify-center border border-white/10 mx-auto shadow-sm">
+            <Layers className="w-6 h-6 text-gray-400" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-white">No Assets Found</h3>
+            <p className="text-xs text-gray-400">Try clearing your search query or selecting a different category filter.</p>
+          </div>
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setSelectedCategory('all');
+            }}
+            className="px-5 py-2 rounded-full bg-white text-black text-xs font-bold hover:bg-gray-100 transition-all shadow-md"
+          >
+            Reset Filters
+          </button>
         </div>
       )}
 
@@ -216,7 +236,7 @@ export const AssetMarketplace: React.FC<AssetMarketplaceProps> = ({ assets, onSe
           onSubmitSuccess={() => {
             setIsSubmitModalOpen(false);
             fetchLiveAssets();
-            alert('RWA Asset submitted successfully! It will appear in the marketplace once approved by the admin.');
+            toast.success('RWA Asset submitted successfully! It will appear in the marketplace once approved by the admin.');
           }}
           walletAddress={wallet.address || ''}
         />
@@ -225,3 +245,4 @@ export const AssetMarketplace: React.FC<AssetMarketplaceProps> = ({ assets, onSe
     </div>
   );
 };
+
