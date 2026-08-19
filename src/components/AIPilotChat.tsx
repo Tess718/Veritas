@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIChatMessage } from '../types';
 import { getActiveNetworkParams } from '../constants/botChain';
+import { useToast } from '../context/ToastContext';
 import { ethers } from 'ethers';
 import { Bot, User, Send, Sparkles, Zap, AlertCircle } from 'lucide-react';
 
@@ -20,6 +21,7 @@ export const AIPilotChat: React.FC<AIPilotChatProps> = ({ onExecuteAction }) => 
   const activeParams = getActiveNetworkParams();
   const [apiError, setApiError] = useState<string | null>(null);
   const [isReady] = useState<boolean>(!!genAI);
+  const toast = useToast();
 
   const [messages, setMessages] = useState<AIChatMessage[]>([
     {
@@ -77,7 +79,7 @@ export const AIPilotChat: React.FC<AIPilotChatProps> = ({ onExecuteAction }) => 
         }
       }
     } else {
-      alert("Please connect an EVM wallet to execute on BOT Chain.");
+      toast.warning("Please connect an EVM wallet to execute on BOT Chain.");
     }
     setExecutingActionId(null);
     onExecuteAction(actionType, details);

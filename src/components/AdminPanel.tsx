@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RWAAsset, WalletState } from '../types';
 import { verifyFractionContract, VerificationResult } from '../lib/verifyContract';
+import { useToast } from '../context/ToastContext';
 import { ShieldAlert, Check, X, RefreshCw, AlertCircle, Building2, MapPin, DollarSign, Layers } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -11,6 +12,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ wallet }) => {
   const adminAddress = '0xA4D0349DdeffEe42Afb019105cB55912F7b8e848'.toLowerCase();
   const currentAddress = (wallet.address || '').toLowerCase();
   const isAdmin = currentAddress === adminAddress;
+  const toast = useToast();
 
   const [pendingAssets, setPendingAssets] = useState<RWAAsset[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -94,10 +96,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ wallet }) => {
       }
 
       setPendingAssets((prev) => prev.filter((a) => a.id !== id));
-      alert(`Asset submission successfully ${decision === 'live' ? 'approved & listed live' : 'rejected'}.`);
+      toast.success(`Asset submission successfully ${decision === 'live' ? 'approved & listed live' : 'rejected'}.`);
     } catch (err: any) {
       console.error('Error processing asset decision:', err);
-      alert(`Error processing decision: ${err.message}`);
+      toast.error(`Error processing decision: ${err.message}`);
     } finally {
       setProcessingId(null);
     }

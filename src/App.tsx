@@ -10,11 +10,13 @@ import { StakingDashboard } from './components/StakingDashboard';
 import { ProofOfReserveScanner } from './components/ProofOfReserveScanner';
 import { AdminPanel } from './components/AdminPanel';
 import { Footer } from './components/Footer';
+import { ToastProvider, useToast } from './context/ToastContext';
 import { ethers } from 'ethers';
 
-export function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState<ActiveTabType>('home');
   const [selectedAsset, setSelectedAsset] = useState<RWAAsset | null>(null);
+  const toast = useToast();
 
   const activeParams = BOT_CHAIN_PARAMS[ACTIVE_NETWORK_KEY];
 
@@ -40,7 +42,6 @@ export function App() {
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: params.hexChainId }],
         });
-        // Wallet will reload or connect via handleChainChanged
       } catch (switchError: any) {
         if (switchError.code === 4902 || switchError.message?.includes('Unrecognized chain')) {
           try {
@@ -91,7 +92,6 @@ export function App() {
           
           localStorage.setItem('veritas_wallet_connected', 'true');
 
-          // Auto-prompt user to switch to correct network if they are on a different one
           if (!isCorrect) {
             await switchToBOTChain(ACTIVE_NETWORK_KEY);
           }
@@ -100,7 +100,7 @@ export function App() {
         console.error('Real wallet connection error:', err);
       }
     } else {
-      alert('No EVM Wallet detected! Please install MetaMask, Bitget Wallet, or TokenPocket to interact in real time on BOT Chain.');
+      toast.warning('No EVM Wallet detected! Please install MetaMask, Bitget Wallet, or TokenPocket to interact in real time on BOT Chain.');
     }
   };
 
@@ -115,6 +115,7 @@ export function App() {
       isCorrectNetwork: false,
     });
     localStorage.removeItem('veritas_wallet_connected');
+    toast.info('Wallet disconnected.');
   };
 
   // Auto-reconnect if connected in previous session
@@ -136,7 +137,7 @@ export function App() {
       };
 
       const handleChainChanged = () => {
-        window.location.reload();
+        connectWallet();
       };
 
       (window as any).ethereum.on('accountsChanged', handleAccountsChanged);
@@ -153,9 +154,8 @@ export function App() {
 
   const handlePurchaseSuccess = (asset: RWAAsset, fractions: number, totalBOT: number) => {
     connectWallet(); // Refresh real on-chain balance
-    // Add position to user staked positions
     const newPos: UserStakedPosition = {
-      assetId: asset.contractAddress,
+      assetId: asset.id || asset.contractAddress,
       assetName: asset.name,
       fractionsOwned: fractions,
       stakedAmountBOT: totalBOT,
@@ -164,20 +164,29 @@ export function App() {
       stakingDate: new Date().toLocaleDateString()
     };
     setStakedPositions((prev) => [...prev, newPos]);
+    toast.success(`Successfully fractionalized ${fractions} shares in ${asset.name}!`);
   };
 
   const handleClaimAllYield = () => {
+    setStakedPositions((prev) =>
+      prev.map((pos) => ({
+        ...pos,
+        unclaimedYieldBOT: 0,
+      }))
+    );
     connectWallet(); // Refresh real on-chain balance
+    toast.success('Yield dividend successfully claimed to your BOT Chain wallet!');
   };
 
   const handleAIAgentAction = (actionType: string, details: string) => {
     if (actionType === 'RECOMMEND_PORTFOLIO' || actionType === 'EXECUTE_REBALANCE') {
       setActiveTab('staking');
+      toast.info('Navigated to Staking Dashboard for AI portfolio rebalance.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#090B10] text-gray-100 flex flex-col font-sans">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#060709] text-gray-100 flex flex-col font-sans">
       
       {/* Top Navbar */}
       <Navbar
@@ -240,6 +249,14 @@ export function App() {
       <Footer />
 
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 
